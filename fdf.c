@@ -21,6 +21,7 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <ftw.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 #define FTW_FD_CNT 20
 
@@ -32,6 +33,7 @@ struct options {
 
 int handle_file (const char *fpath, const struct stat *sb, int typeflag);
 void init_options (struct options *op);
+int is_dir (const char *filepath);
 
 
 int main (int argc, char **argv)
@@ -45,12 +47,16 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
+	if (!is_dir(argv[1])) {
+		fprintf(stderr, "Error: '%s' is not a file\n", argv[1]);
+		return 2;
+	}
+
 	success = ftw(argv[1], handle_file, FTW_FD_CNT);
 
-	printf("success: %d\n", success);
 	ft_destroy_all(opt.ft);
 
-	return 0;
+	return success;
 }
 
 
@@ -86,5 +92,22 @@ int handle_file (const char *fpath, const struct stat *sb, int typeflag)
 void init_options (struct options *op)
 {
 	op->ft = ft_init();
+}
+
+
+int is_dir (const char *filepath)
+{
+	int isdir;
+	struct stat sb;
+
+	if (stat(filepath, &sb) == -1) {
+		isdir = -1;
+	} else if (S_ISDIR(sb.st_mode)) {
+		isdir = 1;
+	} else {
+		isdir = 0;
+	}
+
+	return isdir;
 }
 

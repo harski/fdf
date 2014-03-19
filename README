@@ -1,7 +1,10 @@
 FDF - FIND DUPLICATE FILES
 ==========================
 
-fdf is a program for finding duplicate the files in a directory.
+fdf finds duplicate file entries under the specified directory (recursively).
+Determing if two files are actually the same file is based on file sha1 sums.
+The first file found for each sha1 sum is considered the "original" file, and
+the rest are output to stdout.
 
 
 COMPILING, INSTALLING AND UNISTALLING

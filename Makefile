@@ -18,9 +18,9 @@
 CC=gcc
 CFLAGS=-std=c99 -Wall -Werror -pedantic -D_XOPEN_SOURCE=500
 libs=-lcrypto
-target=fdf
 objs=fdf.o file.o hash.o
-
+target=fdf
+prefix=/usr/local
 
 all: $(target)
 
@@ -35,6 +35,12 @@ file.o: file.c file.h hash.o
 
 hash.o: hash.c hash.h
 	$(CC) -c $(CFLAGS) -o $@ $<
+
+install: $(target)
+	install -m 0755 $(target) $(prefix)/bin
+
+uninstall:
+	rm $(prefix)/bin/$(target)
 
 clean:
 	@rm -rf *.o $(target)

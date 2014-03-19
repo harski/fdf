@@ -1,0 +1,33 @@
+FDF - FIND DUPLICATE FILES
+==========================
+
+fdf is a program for finding duplicate the files in a directory.
+
+
+COMPILING, INSTALLING AND UNISTALLING
+-------------------------------------
+
+The standard stuff: to build the program, command
+
+    $ make
+
+To install fdf make sure to set the path correctly in Makefile and command
+
+    # make install
+
+and to uninstall
+
+    # make uninstall
+
+
+AUTHOR
+------
+
+fdf is written by Tuomo Hartikainen <tth@harski.org>.
+
+
+LICENSE
+-------
+
+fdf is free software, licensed under GPLv3. For details take a look at the
+supplied LICENSE file.

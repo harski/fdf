@@ -34,6 +34,7 @@ struct options {
 int handle_file (const char *fpath, const struct stat *sb, int typeflag);
 void init_options (struct options *op);
 int is_dir (const char *filepath);
+void print_usage ();
 
 
 int main (int argc, char **argv)
@@ -43,7 +44,7 @@ int main (int argc, char **argv)
 
 	if (argc < 2) {
 		fprintf(stderr, "Error: invalid syntax\n");
-		fprintf(stderr, "usage: %s path-to-dir\n", argv[0]);
+		print_usage();
 		return 1;
 	}
 
@@ -109,5 +110,11 @@ int is_dir (const char *filepath)
 	}
 
 	return isdir;
+}
+
+
+void print_usage ()
+{
+	printf("usage: fdf FILE|DIR [FILE|DIR ...]\n");
 }
 

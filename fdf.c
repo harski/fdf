@@ -48,12 +48,8 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	if (!is_dir(argv[1])) {
-		fprintf(stderr, "Error: '%s' is not a file\n", argv[1]);
-		return 2;
-	}
-
-	success = ftw(argv[1], handle_file, FTW_FD_CNT);
+	for (int i = 1; i<argc; ++i)
+		success = ftw(argv[i], handle_file, FTW_FD_CNT);
 
 	ft_destroy_all(opt.ft);
 

@@ -16,7 +16,7 @@
 # fdf. If not, see <http://www.gnu.org/licenses/>.
 
 CC=gcc
-CFLAGS=-std=c99 -Wall -Werror -pedantic -D_XOPEN_SOURCE=500
+CFLAGS=-std=c99 -g -Wall -Werror -pedantic -D_XOPEN_SOURCE=500
 libs=-lcrypto
 objs=fdf.o file.o hash.o
 target=fdf

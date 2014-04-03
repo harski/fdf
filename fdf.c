@@ -18,6 +18,7 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 #include "file.h"
 
+#include <assert.h>
 #include <ftw.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,10 +77,7 @@ int handle_file (const char *fpath, const struct stat *sb, int typeflag)
 	} else if (typeflag == FTW_D) {
 		/* skip the dirs */
 	} else {
-		fprintf(stderr, "Error: something funky happened with '%s'\n",
-			fpath);
-		fprintf(stderr, "Quitting...\n");
-		retval = -1;
+		assert(0);
 	}
 
 	return retval;

@@ -166,18 +166,16 @@ void options_destroy (struct options *opt)
 
 int handle_file (const char *fpath)
 {
-	struct ufile *f;
-	int retval = 0;
+	struct ufile *f, *tmp;
+	int retval = 1;
 
 	f = ufile_init(fpath);
-	ft_add_file(opt.ft, f);
+	tmp = ft_add_file(opt.ft, f);
 
-	/* if file is duplicate, find the original */
-	if (f->prev != NULL) {
-		while (f->prev != NULL)
-			f = f->prev;
-
-		printf("%s is duplicate of %s\n", fpath, f->filepath);
+	/* if ufile wasn't added (is a duplicate) */
+	if (f != tmp) {
+		printf("%s is duplicate of %s\n", fpath, tmp->filepath);
+		ufile_destroy(f);
 	}
 
 	return retval;
@@ -211,4 +209,5 @@ void print_usage ()
 {
 	printf("usage: fdf FILE|DIR [FILE|DIR ...]\n");
 }
+
 

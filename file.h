@@ -46,8 +46,8 @@ struct ft {
 void ufile_destroy (struct ufile *f);
 struct ufile *ufile_init (const char *fp);
 
-void ft_add_file (struct ft *ft, struct ufile *f);
-void ft_add_filepath (struct ft *ft, const char *fp);
+struct ufile * ft_add_file (struct ft *ft, struct ufile *f);
+struct ufile * ft_add_filepath (struct ft *ft, const char *fp);
 
 void ft_destroy (struct ft *ft);
 void ft_destroy_all (struct ft *ft);

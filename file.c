@@ -20,39 +20,45 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <stdlib.h>
 #include <string.h>
 
-static void file_add (struct ufile *root, struct ufile *file);
+static struct ufile * file_add (struct ufile *root, struct ufile *file);
 static void ufile_destroy_all (struct ufile *f);
 
 
-static void file_add (struct ufile *root, struct ufile *file)
+static struct ufile * file_add (struct ufile *root, struct ufile *file)
 {
+	struct ufile *result;
 	int cmp = digest_cmp(file->digest, root->digest);
 
 	if (cmp < 0) {
 		if (root->left == NULL) {
 			root->left = file;
 			file->parent = root;
+			result = file;
 		} else {
-			file_add(root->left, file);
+			result = file_add(root->left, file);
 		}
 
 	} else if (cmp > 0) {
 		if (root->right == NULL) {
 			root->right = file;
 			file->parent = root;
+			result = file;
 		} else {
-			file_add(root->right, file);
+			result = file_add(root->right, file);
 		}
 
 	} else {
 		/* TODO: to save 160 bits per file in the overflow chain link
 		 * the digest pointer to the digest in the first file */
-		while (root->next != NULL)
-			root = root->next;
 
-		root->next = file;
-		file->prev = root;
+		/* TODO: add logic for checking if entry will be put to
+		 * overflow chain */
+
+		/* ufile already exists, return the existing entry */
+		result = root;
 	}
+
+	return result;
 }
 
 
@@ -97,19 +103,30 @@ struct ufile * ufile_init (const char *fp)
 }
 
 
-void ft_add_file (struct ft *ft, struct ufile *f)
+struct ufile * ft_add_file (struct ft *ft, struct ufile *f)
 {
-	if (ft->root == NULL)
+	struct ufile *tmp;
+
+	if (ft->root == NULL) {
 		ft->root = f;
-	else
-		file_add(ft->root, f);
+		tmp = f;
+	} else {
+		tmp = file_add(ft->root, f);
+	}
+
+	return tmp;
 }
 
 
-void ft_add_filepath (struct ft *ft, const char *fp)
+struct ufile * ft_add_filepath (struct ft *ft, const char *fp)
 {
 	struct ufile *f = ufile_init(fp);
-	ft_add_file(ft, f);
+	struct ufile *tmp = ft_add_file(ft, f);
+
+	if (f != tmp)
+		ufile_destroy(f);
+
+	return tmp;
 }
 
 

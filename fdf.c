@@ -43,9 +43,10 @@ struct file {
 STAILQ_HEAD(stail_file_head, file);
 STAILQ_HEAD(stail_dir_head, file);
 
+void options_destroy (struct options *opt);
 int handle_file (const char *fpath);
-void init_options (struct options *op);
 int is_dir (const char *filepath);
+void options_init (struct options *opt);
 void print_usage ();
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
@@ -54,7 +55,7 @@ int unpack_dir (const char *dirname,
 
 int main (int argc, char **argv)
 {
-	init_options(&opt);
+	options_init(&opt);
 
 	if (argc < 2) {
 		fprintf(stderr, "Error: invalid syntax\n");
@@ -104,11 +105,15 @@ int main (int argc, char **argv)
 			}
 		}
 
+		/* handle the next file in queue and free it afterwards */
 		STAILQ_REMOVE_HEAD(&files_head, files);
 		handle_file(tmp->filepath);
 		free(tmp->filepath);
 		free(tmp);
 	}
+
+	/* clean up the options (ufile filetree is cleaned, too) */
+	options_destroy(&opt);
 
 	return 0;
 }
@@ -151,6 +156,14 @@ int unpack_dir (const char *dirname,
 
 }
 
+
+void options_destroy (struct options *opt)
+{
+	if (opt->ft != NULL)
+		ft_destroy_all(opt->ft);
+}
+
+
 int handle_file (const char *fpath)
 {
 	struct ufile *f;
@@ -171,9 +184,9 @@ int handle_file (const char *fpath)
 }
 
 
-void init_options (struct options *op)
+void options_init (struct options *opt)
 {
-	op->ft = ft_init();
+	opt->ft = ft_init();
 }
 
 

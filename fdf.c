@@ -35,13 +35,13 @@ struct options {
 	struct ft *ft;
 } opt;
 
-struct in_file {
+struct file {
 	char * filepath;
-	STAILQ_ENTRY(in_file) files;
+	STAILQ_ENTRY(file) files;
 };
 
-STAILQ_HEAD(stail_file_head, in_file);
-STAILQ_HEAD(stail_dir_head, in_file);
+STAILQ_HEAD(stail_file_head, file);
+STAILQ_HEAD(stail_dir_head, file);
 
 int handle_file (const char *fpath);
 void init_options (struct options *op);
@@ -74,7 +74,7 @@ int main (int argc, char **argv)
 
 	/* divide input files to directories and others */
 	for (int i = 1; i<argc; ++i) {
-		struct in_file *tmp = malloc(sizeof(struct in_file));
+		struct file *tmp = malloc(sizeof(struct file));
 		tmp->filepath = strdup(argv[i]);
 
 		if (is_dir(argv[i])) {
@@ -84,7 +84,7 @@ int main (int argc, char **argv)
 		}
 	}
 
-	struct in_file *tmp;
+	struct file *tmp;
 	while (1) {
 		tmp = STAILQ_FIRST(&files_head);
 
@@ -95,7 +95,7 @@ int main (int argc, char **argv)
 			} else {
 				/* take the dir off from the list,
 				 * pass it to the function and free it */
-				struct in_file *tmp_dir = STAILQ_FIRST(&dirs_head);
+				struct file *tmp_dir = STAILQ_FIRST(&dirs_head);
 				STAILQ_REMOVE_HEAD(&dirs_head, files);
 				unpack_dir(tmp_dir->filepath, &files_head, &dirs_head);
 				free(tmp_dir->filepath);
@@ -128,13 +128,13 @@ int unpack_dir (const char *dirname,
 	}
 
 	while ((files = readdir(dir)) != NULL) {
-		struct in_file *iftmp;
+		struct file *iftmp;
 
 		if (!strcmp(files->d_name, ".") || !strcmp(files->d_name, ".."))
 			continue;
 
 		/* create the file struct */
-		iftmp = malloc(sizeof(struct in_file));
+		iftmp = malloc(sizeof(struct file));
 		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
 		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
 

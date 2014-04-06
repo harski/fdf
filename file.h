@@ -21,37 +21,37 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 
 /* unique file struct */
-struct file {
+struct ufile {
 	char *filepath;
 
 	/* unique identifier of the file */
 	unsigned char *digest;
 
 	/* other files with the same digest */
-	struct file *next;
-	struct file *prev;
+	struct ufile *next;
+	struct ufile *prev;
 
 	/* file tree pointers */
-	struct file *parent;
-	struct file *left;
-	struct file *right;
+	struct ufile *parent;
+	struct ufile *left;
+	struct ufile *right;
 };
 
 
 struct ft {
-	struct file *root;
+	struct ufile *root;
 };
 
 
-void file_destroy (struct file *f);
-struct file * file_init (const char *fp);
+void ufile_destroy (struct ufile *f);
+struct ufile *ufile_init (const char *fp);
 
-void ft_add_file (struct ft *ft, struct file *f);
+void ft_add_file (struct ft *ft, struct ufile *f);
 void ft_add_filepath (struct ft *ft, const char *fp);
 
 void ft_destroy (struct ft *ft);
 void ft_destroy_all (struct ft *ft);
-struct ft * ft_init ();
+struct ft *ft_init ();
 
 #endif
 

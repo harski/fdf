@@ -153,10 +153,10 @@ int unpack_dir (const char *dirname,
 
 int handle_file (const char *fpath)
 {
-	struct file *f;
+	struct ufile *f;
 	int retval = 0;
 
-	f = file_init(fpath);
+	f = ufile_init(fpath);
 	ft_add_file(opt.ft, f);
 
 	/* if file is duplicate, find the original */

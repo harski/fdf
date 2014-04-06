@@ -20,11 +20,11 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <stdlib.h>
 #include <string.h>
 
-static void file_add (struct file *root, struct file *file);
-static void file_destroy_all (struct file *f);
+static void file_add (struct ufile *root, struct ufile *file);
+static void ufile_destroy_all (struct ufile *f);
 
 
-void file_add (struct file *root, struct file *file)
+static void file_add (struct ufile *root, struct ufile *file)
 {
 	int cmp = digest_cmp(file->digest, root->digest);
 
@@ -56,7 +56,7 @@ void file_add (struct file *root, struct file *file)
 }
 
 
-void file_destroy (struct file *f)
+void ufile_destroy (struct ufile *f)
 {
 	free(f->filepath);
 	free(f->digest);
@@ -64,25 +64,25 @@ void file_destroy (struct file *f)
 }
 
 
-static void file_destroy_all (struct file *f)
+static void ufile_destroy_all (struct ufile *f)
 {
 	if (f->left != NULL)
-		file_destroy_all(f->left);
+		ufile_destroy_all(f->left);
 
 	if (f->right != NULL)
-		file_destroy_all(f->right);
+		ufile_destroy_all(f->right);
 
 	/* destroy overflow chain */
 	if (f->next != NULL)
-		file_destroy_all(f->next);
+		ufile_destroy_all(f->next);
 
-	file_destroy(f);
+	ufile_destroy(f);
 }
 
 
-struct file * file_init (const char *fp)
+struct ufile * ufile_init (const char *fp)
 {
-	struct file * f = malloc(sizeof(struct file));
+	struct ufile * f = malloc(sizeof(struct ufile));
 	f->filepath = strdup(fp);
 	f->digest = malloc(DIGEST_LEN);
 	hash_file(fp, f->digest); /* TODO: handle possible errors */
@@ -97,7 +97,7 @@ struct file * file_init (const char *fp)
 }
 
 
-void ft_add_file (struct ft *ft, struct file *f)
+void ft_add_file (struct ft *ft, struct ufile *f)
 {
 	if (ft->root == NULL)
 		ft->root = f;
@@ -108,7 +108,7 @@ void ft_add_file (struct ft *ft, struct file *f)
 
 void ft_add_filepath (struct ft *ft, const char *fp)
 {
-	struct file *f = file_init(fp);
+	struct ufile *f = ufile_init(fp);
 	ft_add_file(ft, f);
 }
 
@@ -122,7 +122,7 @@ void ft_destroy (struct ft *ft)
 void ft_destroy_all (struct ft *ft)
 {
 	if (ft->root != NULL)
-		file_destroy_all(ft->root);
+		ufile_destroy_all(ft->root);
 	free(ft);
 }
 

@@ -19,10 +19,14 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include "file.h"
 
 #include <assert.h>
-#include <ftw.h>
+#include <dirent.h>
+#include <error.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
 #define FTW_FD_CNT 20
 
@@ -31,16 +35,25 @@ struct options {
 	struct ft *ft;
 } opt;
 
+struct in_file {
+	char * filepath;
+	STAILQ_ENTRY(in_file) files;
+};
 
-int handle_file (const char *fpath, const struct stat *sb, int typeflag);
+STAILQ_HEAD(stail_file_head, in_file);
+STAILQ_HEAD(stail_dir_head, in_file);
+
+int handle_file (const char *fpath);
 void init_options (struct options *op);
 int is_dir (const char *filepath);
 void print_usage ();
+int unpack_dir (const char *dirname,
+		struct stail_file_head *files_head,
+		struct stail_dir_head *dirs_head);
 
 
 int main (int argc, char **argv)
 {
-	int success;
 	init_options(&opt);
 
 	if (argc < 2) {
@@ -49,35 +62,109 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	for (int i = 1; i<argc; ++i)
-		success = ftw(argv[i], handle_file, FTW_FD_CNT);
+	/* initialize file list */
+	struct stail_file_head files_head =
+		STAILQ_HEAD_INITIALIZER(files_head);
+	STAILQ_INIT(&files_head);
 
-	ft_destroy_all(opt.ft);
+	/* initialize dir list */
+	struct stail_dir_head dirs_head =
+		STAILQ_HEAD_INITIALIZER(dirs_head);
+	STAILQ_INIT(&dirs_head);
 
-	return success;
+	/* divide input files to directories and others */
+	for (int i = 1; i<argc; ++i) {
+		struct in_file *tmp = malloc(sizeof(struct in_file));
+		tmp->filepath = strdup(argv[i]);
+
+		if (is_dir(argv[i])) {
+			STAILQ_INSERT_TAIL(&dirs_head, tmp, files);
+		} else {
+			STAILQ_INSERT_TAIL(&files_head, tmp, files);
+		}
+	}
+
+	struct in_file *tmp;
+	while (1) {
+		tmp = STAILQ_FIRST(&files_head);
+
+		if (tmp == NULL) {
+			/* if files and dirs are finished, break */
+			if (STAILQ_EMPTY(&dirs_head)) {
+				break;
+			} else {
+				/* take the dir off from the list,
+				 * pass it to the function and free it */
+				struct in_file *tmp_dir = STAILQ_FIRST(&dirs_head);
+				STAILQ_REMOVE_HEAD(&dirs_head, files);
+				unpack_dir(tmp_dir->filepath, &files_head, &dirs_head);
+				free(tmp_dir->filepath);
+				free(tmp_dir);
+				continue;
+			}
+		}
+
+		STAILQ_REMOVE_HEAD(&files_head, files);
+		handle_file(tmp->filepath);
+		free(tmp->filepath);
+		free(tmp);
+	}
+
+	return 0;
 }
 
 
-int handle_file (const char *fpath, const struct stat *sb, int typeflag)
+int unpack_dir (const char *dirname,
+		struct stail_file_head *files_head,
+		struct stail_dir_head *dirs_head)
+{
+	size_t dirname_len = strlen(dirname);
+	struct dirent *files;
+	DIR *dir = opendir(dirname);
+
+	if (dir==NULL) {
+		perror(NULL);
+		return 0;
+	}
+
+	while ((files = readdir(dir)) != NULL) {
+		struct in_file *iftmp;
+
+		if (!strcmp(files->d_name, ".") || !strcmp(files->d_name, ".."))
+			continue;
+
+		/* create the file struct */
+		iftmp = malloc(sizeof(struct in_file));
+		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
+		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
+
+		/* insert to queue */
+		if (is_dir(iftmp->filepath)) {
+			STAILQ_INSERT_TAIL(dirs_head, iftmp, files);
+		} else {
+			STAILQ_INSERT_TAIL(files_head, iftmp, files);
+		}
+	}
+
+	closedir(dir);
+	return 1;
+
+}
+
+int handle_file (const char *fpath)
 {
 	struct file *f;
 	int retval = 0;
 
-	if (typeflag == FTW_F) {
-		f = file_init(fpath);
-		ft_add_file(opt.ft, f);
+	f = file_init(fpath);
+	ft_add_file(opt.ft, f);
 
-		/* if file is duplicate, find the original */
-		if (f->prev != NULL) {
-			while (f->prev != NULL)
-				f = f->prev;
+	/* if file is duplicate, find the original */
+	if (f->prev != NULL) {
+		while (f->prev != NULL)
+			f = f->prev;
 
-			printf("%s is duplicate of %s\n", fpath, f->filepath);
-		}
-	} else if (typeflag == FTW_D) {
-		/* skip the dirs */
-	} else {
-		assert(0);
+		printf("%s is duplicate of %s\n", fpath, f->filepath);
 	}
 
 	return retval;

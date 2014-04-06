@@ -119,44 +119,6 @@ int main (int argc, char **argv)
 }
 
 
-int unpack_dir (const char *dirname,
-		struct stail_file_head *files_head,
-		struct stail_dir_head *dirs_head)
-{
-	size_t dirname_len = strlen(dirname);
-	struct dirent *files;
-	DIR *dir = opendir(dirname);
-
-	if (dir==NULL) {
-		perror(NULL);
-		return 0;
-	}
-
-	while ((files = readdir(dir)) != NULL) {
-		struct file *iftmp;
-
-		if (!strcmp(files->d_name, ".") || !strcmp(files->d_name, ".."))
-			continue;
-
-		/* create the file struct */
-		iftmp = malloc(sizeof(struct file));
-		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
-		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
-
-		/* insert to queue */
-		if (is_dir(iftmp->filepath)) {
-			STAILQ_INSERT_TAIL(dirs_head, iftmp, files);
-		} else {
-			STAILQ_INSERT_TAIL(files_head, iftmp, files);
-		}
-	}
-
-	closedir(dir);
-	return 1;
-
-}
-
-
 void options_destroy (struct options *opt)
 {
 	if (opt->ft != NULL)
@@ -208,6 +170,44 @@ int is_dir (const char *filepath)
 void print_usage ()
 {
 	printf("usage: fdf FILE|DIR [FILE|DIR ...]\n");
+}
+
+
+int unpack_dir (const char *dirname,
+		struct stail_file_head *files_head,
+		struct stail_dir_head *dirs_head)
+{
+	size_t dirname_len = strlen(dirname);
+	struct dirent *files;
+	DIR *dir = opendir(dirname);
+
+	if (dir==NULL) {
+		perror(NULL);
+		return 0;
+	}
+
+	while ((files = readdir(dir)) != NULL) {
+		struct file *iftmp;
+
+		if (!strcmp(files->d_name, ".") || !strcmp(files->d_name, ".."))
+			continue;
+
+		/* create the file struct */
+		iftmp = malloc(sizeof(struct file));
+		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
+		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
+
+		/* insert to queue */
+		if (is_dir(iftmp->filepath)) {
+			STAILQ_INSERT_TAIL(dirs_head, iftmp, files);
+		} else {
+			STAILQ_INSERT_TAIL(files_head, iftmp, files);
+		}
+	}
+
+	closedir(dir);
+	return 1;
+
 }
 
 

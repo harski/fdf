@@ -14,6 +14,7 @@ PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with
 fdf. If not, see <http://www.gnu.org/licenses/>. */
+
 #include "file.h"
 #include "hash.h"
 
@@ -48,9 +49,6 @@ static struct ufile * file_add (struct ufile *root, struct ufile *file)
 		}
 
 	} else {
-		/* TODO: to save 160 bits per file in the overflow chain link
-		 * the digest pointer to the digest in the first file */
-
 		/* TODO: add logic for checking if entry will be put to
 		 * overflow chain */
 
@@ -78,10 +76,6 @@ static void ufile_destroy_all (struct ufile *f)
 	if (f->right != NULL)
 		ufile_destroy_all(f->right);
 
-	/* destroy overflow chain */
-	if (f->next != NULL)
-		ufile_destroy_all(f->next);
-
 	ufile_destroy(f);
 }
 
@@ -93,8 +87,6 @@ struct ufile * ufile_init (const char *fp)
 	f->digest = malloc(DIGEST_LEN);
 	hash_file(fp, f->digest); /* TODO: handle possible errors */
 
-	f->prev = NULL;
-	f->next = NULL;
 	f->parent = NULL;
 	f->left = NULL;
 	f->right = NULL;

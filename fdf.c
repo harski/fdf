@@ -18,34 +18,22 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 #include "file.h"
 
-#include <assert.h>
 #include <dirent.h>
 #include <error.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-
-#define FTW_FD_CNT 20
 
 
 struct options {
 	struct ft *ft;
 } opt;
 
-struct file {
-	char * filepath;
-	STAILQ_ENTRY(file) files;
-};
-
-STAILQ_HEAD(stail_file_head, file);
-STAILQ_HEAD(stail_dir_head, file);
-
-void options_destroy (struct options *opt);
 int handle_file (const char *fpath);
 int is_dir (const char *filepath);
+void options_destroy (struct options *opt);
 void options_init (struct options *opt);
 void print_usage ();
 int unpack_dir (const char *dirname,
@@ -119,13 +107,6 @@ int main (int argc, char **argv)
 }
 
 
-void options_destroy (struct options *opt)
-{
-	if (opt->ft != NULL)
-		ft_destroy_all(opt->ft);
-}
-
-
 int handle_file (const char *fpath)
 {
 	struct ufile *f, *tmp;
@@ -144,12 +125,6 @@ int handle_file (const char *fpath)
 }
 
 
-void options_init (struct options *opt)
-{
-	opt->ft = ft_init();
-}
-
-
 int is_dir (const char *filepath)
 {
 	int isdir;
@@ -164,6 +139,19 @@ int is_dir (const char *filepath)
 	}
 
 	return isdir;
+}
+
+
+void options_destroy (struct options *opt)
+{
+	if (opt->ft != NULL)
+		ft_destroy_all(opt->ft);
+}
+
+
+void options_init (struct options *opt)
+{
+	opt->ft = ft_init();
 }
 
 

@@ -19,6 +19,16 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #ifndef FDF_FILE_H
 #define FDF_FILE_H
 
+#include <sys/queue.h>
+
+struct file {
+	char * filepath;
+	STAILQ_ENTRY(file) files;
+};
+
+STAILQ_HEAD(stail_file_head, file);
+STAILQ_HEAD(stail_dir_head, file);
+
 
 /* unique file struct */
 struct ufile {
@@ -27,10 +37,6 @@ struct ufile {
 	/* unique identifier of the file */
 	unsigned char *digest;
 
-	/* other files with the same digest */
-	struct ufile *next;
-	struct ufile *prev;
-
 	/* file tree pointers */
 	struct ufile *parent;
 	struct ufile *left;
@@ -38,20 +44,27 @@ struct ufile {
 };
 
 
+/* filetree struct */
 struct ft {
 	struct ufile *root;
 };
 
 
-void ufile_destroy (struct ufile *f);
 struct ufile *ufile_init (const char *fp);
+void ufile_destroy (struct ufile *f);
 
-struct ufile * ft_add_file (struct ft *ft, struct ufile *f);
-struct ufile * ft_add_filepath (struct ft *ft, const char *fp);
 
-void ft_destroy (struct ft *ft);
-void ft_destroy_all (struct ft *ft);
 struct ft *ft_init ();
+void ft_destroy (struct ft *ft);
+
+/* free struct ft and the tree below it */
+void ft_destroy_all (struct ft *ft);
+
+/* add ufile to the filetree */
+struct ufile * ft_add_file (struct ft *ft, struct ufile *f);
+
+/* create the ufile based on the the filepath and add it to the filetree */
+struct ufile * ft_add_filepath (struct ft *ft, const char *fp);
 
 #endif
 

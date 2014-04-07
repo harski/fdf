@@ -20,12 +20,19 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 #include <dirent.h>
 #include <error.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
+
+enum {
+	OPT_SUCCESS,
+	OPT_EXIT_SUCCESS,
+	OPT_EXIT_FAILURE
+};
 
 struct options {
 	struct ft *ft;
@@ -35,6 +42,9 @@ int handle_file (const char *fpath);
 int is_dir (const char *filepath);
 void options_destroy (struct options *opt);
 void options_init (struct options *opt);
+int parse_options (int argc, char **argv, struct options *opt,
+			struct stail_file_head *sfh,
+			struct stail_dir_head *sdh);
 void print_usage ();
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
@@ -43,35 +53,21 @@ int unpack_dir (const char *dirname,
 
 int main (int argc, char **argv)
 {
-	options_init(&opt);
+	int result;
 
-	if (argc < 2) {
-		fprintf(stderr, "Error: invalid syntax\n");
-		print_usage();
-		return 1;
-	}
+	options_init(&opt);
 
 	/* initialize file list */
 	struct stail_file_head files_head =
 		STAILQ_HEAD_INITIALIZER(files_head);
-	STAILQ_INIT(&files_head);
 
 	/* initialize dir list */
 	struct stail_dir_head dirs_head =
 		STAILQ_HEAD_INITIALIZER(dirs_head);
-	STAILQ_INIT(&dirs_head);
 
-	/* divide input files to directories and others */
-	for (int i = 1; i<argc; ++i) {
-		struct file *tmp = malloc(sizeof(struct file));
-		tmp->filepath = strdup(argv[i]);
-
-		if (is_dir(argv[i])) {
-			STAILQ_INSERT_TAIL(&dirs_head, tmp, files);
-		} else {
-			STAILQ_INSERT_TAIL(&files_head, tmp, files);
-		}
-	}
+	result = parse_options(argc, argv, &opt, &files_head, &dirs_head);
+	if (result!=OPT_SUCCESS)
+		return result;
 
 	struct file *tmp;
 	while (1) {
@@ -152,6 +148,66 @@ void options_destroy (struct options *opt)
 void options_init (struct options *opt)
 {
 	opt->ft = ft_init();
+}
+
+
+int parse_options (int argc, char **argv, struct options *opt,
+			struct stail_file_head *sfh,
+			struct stail_dir_head *sdh)
+{
+	int retval = OPT_SUCCESS;
+
+	opterr = 0; /* don't print getopt errors */
+
+	while (1) {
+		int optc;
+		static struct option long_options[] = {
+			{"help",	no_argument,	0,	'h'},
+			{"usage",	no_argument,	0,	'h'},
+			{0,		0,		0,	0}
+		};
+
+		optc = getopt_long(argc, argv, "h",
+				long_options, NULL);
+
+		/* all options handled */
+		if (optc == -1)
+			break;
+
+		switch (optc) {
+		case 'h':
+			print_usage();
+			retval = OPT_EXIT_SUCCESS;
+			break;
+		default:
+			fprintf(stderr, "Error: unknown option '%c'\n", optc);
+			retval = OPT_EXIT_FAILURE;
+			break;
+		}
+	}
+
+	/* if exit flag was not raised handle input files */
+	if (retval == OPT_SUCCESS) {
+		if (optind >= argc) {
+			fprintf(stderr, "Error: no input files\n");
+			print_usage();
+			retval = OPT_EXIT_FAILURE;
+		} else {
+			for (; optind < argc; ++optind) {
+				/* divide input files to directories and others */
+				struct file *tmp = malloc(sizeof(struct file));
+				tmp->filepath = strdup(argv[optind]);
+
+				if (is_dir(argv[optind])) {
+					STAILQ_INSERT_TAIL(sdh, tmp, files);
+				} else {
+					STAILQ_INSERT_TAIL(sfh, tmp, files);
+				}
+			}
+		}
+	}
+
+	return retval;
 }
 
 

@@ -16,8 +16,6 @@ You should have received a copy of the GNU General Public License along with
 fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 
-#include "file.h"
-
 #include <dirent.h>
 #include <error.h>
 #include <getopt.h>
@@ -26,6 +24,9 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include "debug.h"
+#include "file.h"
 
 #define VERSION_STR "0.01"
 
@@ -39,11 +40,15 @@ struct options {
 	struct ft *ft;
 } opt;
 
+struct file * get_next_file (struct stail_file_head *files,
+				struct stail_file_head *dirs);
 int handle_file (const char *fpath);
 int is_dir (const char *filepath);
 void options_destroy (struct options *opt);
 void options_init (struct options *opt);
-int parse_options (int argc, char **argv, struct options *opt,
+int parse_options (int argc,
+			char **argv,
+			struct options *opt,
 			struct stail_file_head *sfh,
 			struct stail_file_head *sdh);
 void print_usage ();
@@ -72,23 +77,10 @@ int main (int argc, char **argv)
 
 	struct file *tmp;
 	while (1) {
-		tmp = STAILQ_FIRST(&files_head);
-
-		if (tmp == NULL) {
-			/* if files and dirs are finished, break */
-			if (STAILQ_EMPTY(&dirs_head)) {
-				break;
-			} else {
-				/* take the dir off from the list,
-				 * pass it to the function and free it */
-				struct file *tmp_dir = STAILQ_FIRST(&dirs_head);
-				STAILQ_REMOVE_HEAD(&dirs_head, files);
-				unpack_dir(tmp_dir->filepath, &files_head, &dirs_head);
-				free(tmp_dir->filepath);
-				free(tmp_dir);
-				continue;
-			}
-		}
+		/* if files and dirs are finished return */
+		tmp = get_next_file(&files_head, &dirs_head);
+		if (tmp == NULL)
+			break;
 
 		/* handle the next file in queue and free it afterwards */
 		STAILQ_REMOVE_HEAD(&files_head, files);
@@ -101,6 +93,37 @@ int main (int argc, char **argv)
 	options_destroy(&opt);
 
 	return 0;
+}
+
+
+struct file * get_next_file (struct stail_file_head *files_h,
+				struct stail_file_head *dirs_h)
+{
+	struct file *next_file;
+	next_file = STAILQ_FIRST(files_h);
+
+	/* if files and dirs are finished give up and return NULL */
+	while (next_file == NULL && !STAILQ_EMPTY(dirs_h)) {
+
+		/* if there were no files, take next dir, extract its contents and return the
+		 * next file */
+		struct file *tmp_dir = STAILQ_FIRST(dirs_h);
+		STAILQ_REMOVE_HEAD(dirs_h, files);
+		unpack_dir(tmp_dir->filepath, files_h, dirs_h);
+		free(tmp_dir->filepath);
+		free(tmp_dir);
+
+		next_file = STAILQ_FIRST(files_h);
+	}
+
+#ifdef DEBUG
+	if (next_file != NULL)
+		debug_print("handling '%s\n", next_file->filepath);
+	else
+		debug_print("%s\n", "no next_file to handle");
+#endif
+
+	return next_file;
 }
 
 

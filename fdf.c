@@ -27,6 +27,7 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define VERSION_STR "0.01"
 
 enum {
 	OPT_SUCCESS,
@@ -164,10 +165,11 @@ int parse_options (int argc, char **argv, struct options *opt,
 		static struct option long_options[] = {
 			{"help",	no_argument,	0,	'h'},
 			{"usage",	no_argument,	0,	'h'},
+			{"version",	no_argument,	0,	'V'},
 			{0,		0,		0,	0}
 		};
 
-		optc = getopt_long(argc, argv, "h",
+		optc = getopt_long(argc, argv, "hV",
 				long_options, NULL);
 
 		/* all options handled */
@@ -177,6 +179,10 @@ int parse_options (int argc, char **argv, struct options *opt,
 		switch (optc) {
 		case 'h':
 			print_usage();
+			retval = OPT_EXIT_SUCCESS;
+			break;
+		case 'V':
+			printf("fdf %s\n", VERSION_STR);
 			retval = OPT_EXIT_SUCCESS;
 			break;
 		default:
@@ -215,7 +221,8 @@ void print_usage ()
 {
 	printf("usage: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
-	printf("--help, --usage\tPrint this help.\n");
+	printf("-h, --help, --usage\tPrint this help.\n");
+	printf("-V, --version\tPrint version information\t");
 }
 
 

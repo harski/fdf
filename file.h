@@ -27,8 +27,6 @@ struct file {
 };
 
 STAILQ_HEAD(stail_file_head, file);
-STAILQ_HEAD(stail_dir_head, file);
-
 
 /* unique file struct */
 struct ufile {

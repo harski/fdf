@@ -45,11 +45,11 @@ void options_destroy (struct options *opt);
 void options_init (struct options *opt);
 int parse_options (int argc, char **argv, struct options *opt,
 			struct stail_file_head *sfh,
-			struct stail_dir_head *sdh);
+			struct stail_file_head *sdh);
 void print_usage ();
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
-		struct stail_dir_head *dirs_head);
+		struct stail_file_head *dirs_head);
 
 
 int main (int argc, char **argv)
@@ -63,7 +63,7 @@ int main (int argc, char **argv)
 		STAILQ_HEAD_INITIALIZER(files_head);
 
 	/* initialize dir list */
-	struct stail_dir_head dirs_head =
+	struct stail_file_head dirs_head =
 		STAILQ_HEAD_INITIALIZER(dirs_head);
 
 	result = parse_options(argc, argv, &opt, &files_head, &dirs_head);
@@ -154,7 +154,7 @@ void options_init (struct options *opt)
 
 int parse_options (int argc, char **argv, struct options *opt,
 			struct stail_file_head *sfh,
-			struct stail_dir_head *sdh)
+			struct stail_file_head *sdh)
 {
 	int retval = OPT_SUCCESS;
 
@@ -228,7 +228,7 @@ void print_usage ()
 
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
-		struct stail_dir_head *dirs_head)
+		struct stail_file_head *dirs_head)
 {
 	size_t dirname_len = strlen(dirname);
 	struct dirent *files;

@@ -213,7 +213,9 @@ int parse_options (int argc, char **argv, struct options *opt,
 
 void print_usage ()
 {
-	printf("usage: fdf FILE|DIR [FILE|DIR ...]\n");
+	printf("usage: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
+	printf("\nACTIONS:\n");
+	printf("--help, --usage\tPrint this help.\n");
 }
 
 
@@ -251,7 +253,6 @@ int unpack_dir (const char *dirname,
 
 	closedir(dir);
 	return 1;
-
 }
 
 

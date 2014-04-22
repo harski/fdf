@@ -105,8 +105,8 @@ struct file * get_next_file (struct stail_file_head *files_h,
 	/* if files and dirs are finished give up and return NULL */
 	while (next_file == NULL && !STAILQ_EMPTY(dirs_h)) {
 
-		/* if there were no files, take next dir, extract its contents and return the
-		 * next file */
+		/* if there were no files, take next dir, extract its contents
+		 * and return the next file */
 		struct file *tmp_dir = STAILQ_FIRST(dirs_h);
 		STAILQ_REMOVE_HEAD(dirs_h, files);
 		unpack_dir(tmp_dir->filepath, files_h, dirs_h);
@@ -209,7 +209,8 @@ int parse_options (int argc, char **argv, struct options *opt,
 			retval = OPT_EXIT_SUCCESS;
 			break;
 		default:
-			fprintf(stderr, "Error: unknown option '%c'\n", optc);
+			fprintf(stderr, "Error: unknown option '%s'\n",
+				argv[optind-1]);
 			retval = OPT_EXIT_FAILURE;
 			break;
 		}

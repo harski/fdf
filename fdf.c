@@ -36,12 +36,23 @@ enum {
 	OPT_EXIT_FAILURE
 };
 
+enum ACTIONS {
+	AC_FDF,
+	AC_HELP,
+	AC_VERSION,
+	AC_CNT,
+	AC_ERR
+};
+
 struct options {
 	struct ft *ft;
+	int actions[AC_CNT]; /* all the available actions */
 } opt;
 
 struct file * get_next_file (struct stail_file_head *files,
 				struct stail_file_head *dirs);
+int find_duplicates (struct stail_file_head *files_head,
+			struct stail_file_head *dirs_head);
 int handle_file (const char *fpath);
 int is_dir (const char *filepath);
 void options_destroy (struct options *opt);
@@ -55,11 +66,12 @@ void print_usage ();
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
 		struct stail_file_head *dirs_head);
-
+int validate_action (int *actions);
 
 int main (int argc, char **argv)
 {
 	int result;
+	int action;
 
 	options_init(&opt);
 
@@ -75,18 +87,24 @@ int main (int argc, char **argv)
 	if (result!=OPT_SUCCESS)
 		return result;
 
-	struct file *tmp;
-	while (1) {
-		/* if files and dirs are finished return */
-		tmp = get_next_file(&files_head, &dirs_head);
-		if (tmp == NULL)
-			break;
+	action = validate_action(opt.actions);
+	if (action == AC_ERR) {
+		fprintf(stderr, "Error: more than one action given\n");
+		print_usage();
+		return 1;
+	}
 
-		/* handle the next file in queue and free it afterwards */
-		STAILQ_REMOVE_HEAD(&files_head, files);
-		handle_file(tmp->filepath);
-		free(tmp->filepath);
-		free(tmp);
+	switch(action) {
+	case AC_FDF:
+		find_duplicates(&files_head, &dirs_head);
+		break;
+	case AC_HELP:
+		debug_print("%s\n", "debug print");
+		print_usage();
+		break;
+	case AC_VERSION:
+		printf("fdf version %s\n", VERSION_STR);
+		break;
 	}
 
 	/* clean up the options (ufile filetree is cleaned, too) */
@@ -124,6 +142,27 @@ struct file * get_next_file (struct stail_file_head *files_h,
 #endif
 
 	return next_file;
+}
+
+
+int find_duplicates (struct stail_file_head *files_head,
+			struct stail_file_head *dirs_head)
+{
+	struct file *tmp;
+	while (1) {
+		/* if files and dirs are finished return */
+		tmp = get_next_file(files_head, dirs_head);
+		if (tmp == NULL)
+			break;
+
+		/* handle the next file in queue and free it afterwards */
+		STAILQ_REMOVE_HEAD(files_head, files);
+		handle_file(tmp->filepath);
+		free(tmp->filepath);
+		free(tmp);
+	}
+
+	return 1;
 }
 
 
@@ -172,6 +211,9 @@ void options_destroy (struct options *opt)
 void options_init (struct options *opt)
 {
 	opt->ft = ft_init();
+
+	for (int i = 0; i < AC_CNT; ++i)
+		opt->actions[i] = 0;
 }
 
 
@@ -180,7 +222,6 @@ int parse_options (int argc, char **argv, struct options *opt,
 			struct stail_file_head *sdh)
 {
 	int retval = OPT_SUCCESS;
-
 	opterr = 0; /* don't print getopt errors */
 
 	while (1) {
@@ -201,12 +242,10 @@ int parse_options (int argc, char **argv, struct options *opt,
 
 		switch (optc) {
 		case 'h':
-			print_usage();
-			retval = OPT_EXIT_SUCCESS;
+			opt->actions[AC_HELP] = 1;
 			break;
 		case 'V':
-			printf("fdf %s\n", VERSION_STR);
-			retval = OPT_EXIT_SUCCESS;
+			opt->actions[AC_VERSION] = 1;
 			break;
 		default:
 			fprintf(stderr, "Error: unknown option '%s'\n",
@@ -218,21 +257,15 @@ int parse_options (int argc, char **argv, struct options *opt,
 
 	/* if exit flag was not raised handle input files */
 	if (retval == OPT_SUCCESS) {
-		if (optind >= argc) {
-			fprintf(stderr, "Error: no input files\n");
-			print_usage();
-			retval = OPT_EXIT_FAILURE;
-		} else {
-			for (; optind < argc; ++optind) {
-				/* divide input files to directories and others */
-				struct file *tmp = malloc(sizeof(struct file));
-				tmp->filepath = strdup(argv[optind]);
+		for (; optind < argc; ++optind) {
+			/* divide input files to directories and others */
+			struct file *tmp = malloc(sizeof(struct file));
+			tmp->filepath = strdup(argv[optind]);
 
-				if (is_dir(argv[optind])) {
-					STAILQ_INSERT_TAIL(sdh, tmp, files);
-				} else {
-					STAILQ_INSERT_TAIL(sfh, tmp, files);
-				}
+			if (is_dir(argv[optind])) {
+				STAILQ_INSERT_TAIL(sdh, tmp, files);
+			} else {
+				STAILQ_INSERT_TAIL(sfh, tmp, files);
 			}
 		}
 	}
@@ -246,7 +279,7 @@ void print_usage ()
 	printf("usage: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
 	printf("-h, --help, --usage\tPrint this help.\n");
-	printf("-V, --version\tPrint version information\t");
+	printf("-V, --version\tPrint version information.\n");
 }
 
 
@@ -287,3 +320,22 @@ int unpack_dir (const char *dirname,
 }
 
 
+int validate_action (int *actions)
+{
+	int retval = AC_FDF; /* init with default action */
+	int ac_cnt = 0;
+	int i;
+
+	for (i=0; i<AC_CNT; ++i) {
+		if (actions[i]) {
+			retval = i;
+			++ac_cnt;
+		}
+	}
+
+	/* if no action specified, do fdf */
+	if (ac_cnt > 1)
+		retval = AC_ERR;
+
+	return retval;
+}

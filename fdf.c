@@ -47,16 +47,17 @@ enum ACTIONS {
 struct options {
 	struct ft *ft;
 	int actions[AC_CNT]; /* all the available actions */
-} opt;
+};
 
 struct file * get_next_file (struct stail_file_head *files,
 				struct stail_file_head *dirs);
-int find_duplicates (struct stail_file_head *files_head,
+int find_duplicates (struct options *opt,
+			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head);
-int handle_file (const char *fpath);
+int handle_file (const struct options *opt, const char *fpath);
 int is_dir (const char *filepath);
 void options_destroy (struct options *opt);
-void options_init (struct options *opt);
+struct options * options_init ();
 int parse_options (int argc,
 			char **argv,
 			struct options *opt,
@@ -68,12 +69,13 @@ int unpack_dir (const char *dirname,
 		struct stail_file_head *dirs_head);
 int validate_action (int *actions);
 
+
 int main (int argc, char **argv)
 {
 	int result;
 	int action;
 
-	options_init(&opt);
+	struct options * opt = options_init();
 
 	/* initialize file list */
 	struct stail_file_head files_head =
@@ -83,11 +85,11 @@ int main (int argc, char **argv)
 	struct stail_file_head dirs_head =
 		STAILQ_HEAD_INITIALIZER(dirs_head);
 
-	result = parse_options(argc, argv, &opt, &files_head, &dirs_head);
+	result = parse_options(argc, argv, opt, &files_head, &dirs_head);
 	if (result!=OPT_SUCCESS)
 		return result;
 
-	action = validate_action(opt.actions);
+	action = validate_action(opt->actions);
 	if (action == AC_ERR) {
 		fprintf(stderr, "Error: more than one action given\n");
 		print_usage();
@@ -96,7 +98,7 @@ int main (int argc, char **argv)
 
 	switch(action) {
 	case AC_FDF:
-		find_duplicates(&files_head, &dirs_head);
+		find_duplicates(opt, &files_head, &dirs_head);
 		break;
 	case AC_HELP:
 		debug_print("%s\n", "debug print");
@@ -108,7 +110,7 @@ int main (int argc, char **argv)
 	}
 
 	/* clean up the options (ufile filetree is cleaned, too) */
-	options_destroy(&opt);
+	options_destroy(opt);
 
 	return 0;
 }
@@ -145,7 +147,8 @@ struct file * get_next_file (struct stail_file_head *files_h,
 }
 
 
-int find_duplicates (struct stail_file_head *files_head,
+int find_duplicates (struct options *opt,
+			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head)
 {
 	struct file *tmp;
@@ -157,7 +160,7 @@ int find_duplicates (struct stail_file_head *files_head,
 
 		/* handle the next file in queue and free it afterwards */
 		STAILQ_REMOVE_HEAD(files_head, files);
-		handle_file(tmp->filepath);
+		handle_file(opt, tmp->filepath);
 		free(tmp->filepath);
 		free(tmp);
 	}
@@ -166,13 +169,13 @@ int find_duplicates (struct stail_file_head *files_head,
 }
 
 
-int handle_file (const char *fpath)
+int handle_file (const struct options *opt, const char *fpath)
 {
 	struct ufile *f, *tmp;
 	int retval = 1;
 
 	f = ufile_init(fpath);
-	tmp = ft_add_file(opt.ft, f);
+	tmp = ft_add_file(opt->ft, f);
 
 	/* if ufile wasn't added (is a duplicate) */
 	if (f != tmp) {
@@ -205,15 +208,20 @@ void options_destroy (struct options *opt)
 {
 	if (opt->ft != NULL)
 		ft_destroy_all(opt->ft);
+
+	free(opt);
 }
 
 
-void options_init (struct options *opt)
+struct options * options_init ()
 {
+	struct options *opt = malloc(sizeof(struct options));
 	opt->ft = ft_init();
 
 	for (int i = 0; i < AC_CNT; ++i)
 		opt->actions[i] = 0;
+
+	return opt;
 }
 
 

@@ -10,7 +10,8 @@ the rest are output to stdout.
 COMPILING, INSTALLING AND UNISTALLING
 -------------------------------------
 
-The standard stuff: to build the program, command
+Customize variables in config.mk to suit your system. To build the program,
+command
 
     $ make
 

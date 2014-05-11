@@ -28,8 +28,6 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include "debug.h"
 #include "file.h"
 
-#define VERSION_STR "0.01"
-
 enum {
 	OPT_SUCCESS,
 	OPT_EXIT_SUCCESS,
@@ -105,7 +103,7 @@ int main (int argc, char **argv)
 		print_usage();
 		break;
 	case AC_VERSION:
-		printf("fdf version %s\n", VERSION_STR);
+		printf("fdf version %s\n", VERSION);
 		break;
 	}
 

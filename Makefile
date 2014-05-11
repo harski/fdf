@@ -15,26 +15,20 @@
 # You should have received a copy of the GNU General Public License along with
 # fdf. If not, see <http://www.gnu.org/licenses/>.
 
-CC=gcc
-CFLAGS=-std=c99 -g -Wall -Werror -pedantic -D_XOPEN_SOURCE=500
-libs=-lcrypto
-objs=fdf.o file.o hash.o
-target=fdf
-prefix=/usr/local
+include config.mk
+
+src = fdf.c file.c hash.c
+objs := ${src:.c=.o}
+
+target = fdf
 
 all: $(target)
 
 $(target): $(objs)
-	$(CC) $(CFLAGS) $(libs) $(objs) -o $(target)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(objs) -o $@
 
-fdf.o: fdf.c file.h
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-file.o: file.c file.h hash.o
-	$(CC) -c $(CFLAGS) -o $@ $<
-
-hash.o: hash.c hash.h
-	$(CC) -c $(CFLAGS) -o $@ $<
+%.o: %.c
+	$(CC) -c $(CFLAGS) $<
 
 install: $(target)
 	install -m 0755 $(target) $(prefix)/bin
@@ -43,4 +37,4 @@ uninstall:
 	rm $(prefix)/bin/$(target)
 
 clean:
-	@rm -rf *.o $(target)
+	rm -rf $(objs) $(target)

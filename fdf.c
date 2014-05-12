@@ -61,7 +61,7 @@ int parse_options (int argc,
 			struct options *opt,
 			struct stail_file_head *sfh,
 			struct stail_file_head *sdh);
-void print_usage ();
+void print_help ();
 int unpack_dir (const char *dirname,
 		struct stail_file_head *files_head,
 		struct stail_file_head *dirs_head);
@@ -90,7 +90,7 @@ int main (int argc, char **argv)
 	action = validate_action(opt->actions);
 	if (action == AC_ERR) {
 		fprintf(stderr, "Error: more than one action given\n");
-		print_usage();
+		print_help();
 		return 1;
 	}
 
@@ -100,7 +100,7 @@ int main (int argc, char **argv)
 		break;
 	case AC_HELP:
 		debug_print("%s\n", "debug print");
-		print_usage();
+		print_help();
 		break;
 	case AC_VERSION:
 		printf("fdf version %s\n", VERSION);
@@ -234,7 +234,6 @@ int parse_options (int argc, char **argv, struct options *opt,
 		int optc;
 		static struct option long_options[] = {
 			{"help",	no_argument,	0,	'h'},
-			{"usage",	no_argument,	0,	'h'},
 			{"version",	no_argument,	0,	'V'},
 			{0,		0,		0,	0}
 		};
@@ -280,11 +279,11 @@ int parse_options (int argc, char **argv, struct options *opt,
 }
 
 
-void print_usage ()
+void print_help ()
 {
-	printf("usage: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
+	printf("help: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
-	printf("-h, --help, --usage\tPrint this help.\n");
+	printf("-h, --help\tPrint this help.\n");
 	printf("-V, --version\tPrint version information.\n");
 }
 

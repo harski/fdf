@@ -60,41 +60,6 @@ static struct ufile * file_add (struct ufile *root, struct ufile *file)
 }
 
 
-void ufile_destroy (struct ufile *f)
-{
-	free(f->filepath);
-	free(f->digest);
-	free(f);
-}
-
-
-static void ufile_destroy_all (struct ufile *f)
-{
-	if (f->left != NULL)
-		ufile_destroy_all(f->left);
-
-	if (f->right != NULL)
-		ufile_destroy_all(f->right);
-
-	ufile_destroy(f);
-}
-
-
-struct ufile * ufile_init (const char *fp)
-{
-	struct ufile * f = malloc(sizeof(struct ufile));
-	f->filepath = strdup(fp);
-	f->digest = malloc(DIGEST_LEN);
-	hash_file(fp, f->digest); /* TODO: handle possible errors */
-
-	f->parent = NULL;
-	f->left = NULL;
-	f->right = NULL;
-
-	return f;
-}
-
-
 struct ufile * ft_add_file (struct ft *ft, struct ufile *f)
 {
 	struct ufile *tmp;
@@ -143,3 +108,37 @@ struct ft * ft_init ()
 	return ft;
 }
 
+
+void ufile_destroy (struct ufile *f)
+{
+	free(f->filepath);
+	free(f->digest);
+	free(f);
+}
+
+
+static void ufile_destroy_all (struct ufile *f)
+{
+	if (f->left != NULL)
+		ufile_destroy_all(f->left);
+
+	if (f->right != NULL)
+		ufile_destroy_all(f->right);
+
+	ufile_destroy(f);
+}
+
+
+struct ufile * ufile_init (const char *fp)
+{
+	struct ufile * f = malloc(sizeof(struct ufile));
+	f->filepath = strdup(fp);
+	f->digest = malloc(DIGEST_LEN);
+	hash_file(fp, f->digest); /* TODO: handle possible errors */
+
+	f->parent = NULL;
+	f->left = NULL;
+	f->right = NULL;
+
+	return f;
+}

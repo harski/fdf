@@ -48,9 +48,6 @@ struct ft {
 };
 
 
-struct ufile *ufile_init (const char *fp);
-void ufile_destroy (struct ufile *f);
-
 
 struct ft *ft_init ();
 void ft_destroy (struct ft *ft);
@@ -63,6 +60,9 @@ struct ufile * ft_add_file (struct ft *ft, struct ufile *f);
 
 /* create the ufile based on the the filepath and add it to the filetree */
 struct ufile * ft_add_filepath (struct ft *ft, const char *fp);
+
+void ufile_destroy (struct ufile *f);
+struct ufile *ufile_init (const char *fp);
 
 #endif
 

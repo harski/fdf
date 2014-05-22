@@ -19,7 +19,9 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #ifndef FDF_FILE_H
 #define FDF_FILE_H
 
+#include <stdbool.h>
 #include <sys/queue.h>
+#include <sys/types.h>
 
 struct file {
 	char * filepath;
@@ -48,12 +50,13 @@ struct ft {
 };
 
 
-
 struct ft *ft_init ();
 void ft_destroy (struct ft *ft);
 
 /* free struct ft and the tree below it */
 void ft_destroy_all (struct ft *ft);
+
+bool get_filetype (const char *filepath, mode_t * restrict type);
 
 /* add ufile to the filetree */
 struct ufile * ft_add_file (struct ft *ft, struct ufile *f);

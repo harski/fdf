@@ -20,6 +20,7 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 static struct ufile * file_add (struct ufile *root, struct ufile *file);
 static void ufile_destroy_all (struct ufile *f);
@@ -106,6 +107,20 @@ struct ft * ft_init ()
 	struct ft *ft = malloc(sizeof(struct ft));
 	ft->root = NULL;
 	return ft;
+}
+
+
+bool get_filetype (const char *filepath, mode_t * restrict type)
+{
+	bool res = true;
+	struct stat sb;
+
+	if (stat(filepath, &sb) == -1)
+		res = false;
+	else
+		*type = sb.st_mode;
+
+	return res;
 }
 
 

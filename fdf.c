@@ -56,7 +56,7 @@ int find_duplicates (struct options *opt,
 			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head);
 int handle_file (const struct options *opt, const char *fpath);
-int is_dir (const char *filepath);
+bool is_dir (const char *filepath);
 void options_destroy (struct options *opt);
 struct options * options_init ();
 int parse_options (int argc,
@@ -198,20 +198,13 @@ int handle_file (const struct options *opt, const char *fpath)
 }
 
 
-int is_dir (const char *filepath)
+bool is_dir (const char *filepath)
 {
-	int isdir;
-	struct stat sb;
-
-	if (stat(filepath, &sb) == -1) {
-		isdir = -1;
-	} else if (S_ISDIR(sb.st_mode)) {
-		isdir = 1;
-	} else {
-		isdir = 0;
-	}
-
-	return isdir;
+	mode_t mode;
+	if (get_filetype(filepath, &mode) && S_ISDIR(mode))
+		return true;
+	else
+		return false;
 }
 
 

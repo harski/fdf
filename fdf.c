@@ -62,12 +62,10 @@ struct options * options_init ();
 int parse_options (int argc,
 			char **argv,
 			struct options *opt,
-			struct stail_file_head *sfh,
-			struct stail_file_head *sdh);
+			struct stail_file_head *sfh);
 void print_help ();
 int unpack_dir (const char *dirname,
-		struct stail_file_head *files_head,
-		struct stail_file_head *dirs_head);
+		struct stail_file_head *files_head);
 int validate_action (int *actions);
 
 
@@ -78,7 +76,7 @@ int main (int argc, char **argv)
 
 	struct options * opt = options_init();
 
-	/* initialize file list */
+	/* initialize file input list */
 	struct stail_file_head files_head =
 		STAILQ_HEAD_INITIALIZER(files_head);
 
@@ -86,7 +84,7 @@ int main (int argc, char **argv)
 	struct stail_file_head dirs_head =
 		STAILQ_HEAD_INITIALIZER(dirs_head);
 
-	result = parse_options(argc, argv, opt, &files_head, &dirs_head);
+	result = parse_options(argc, argv, opt, &files_head);
 	if (result!=OPT_SUCCESS)
 		return result;
 
@@ -117,32 +115,45 @@ int main (int argc, char **argv)
 }
 
 
+/* returns the next file \DIR in the IFQ. If no files are present the next
+ * directory in directory queue is expanded and the next file is looked for
+ * again. If there is no next file NULL is returned */
 struct file * get_next_file (struct stail_file_head *files_h,
 				struct stail_file_head *dirs_h)
 {
 	struct file *next_file;
-	next_file = STAILQ_FIRST(files_h);
 
-	/* if files and dirs are finished give up and return NULL */
-	while (next_file == NULL && !STAILQ_EMPTY(dirs_h)) {
-
-		/* if there were no files, take next dir, extract its contents
-		 * and return the next file */
-		struct file *tmp_dir = STAILQ_FIRST(dirs_h);
-		STAILQ_REMOVE_HEAD(dirs_h, files);
-		unpack_dir(tmp_dir->filepath, files_h, dirs_h);
-		free(tmp_dir->filepath);
-		free(tmp_dir);
-
-		next_file = STAILQ_FIRST(files_h);
-	}
-
+	do {
+		if (!STAILQ_EMPTY(files_h)) {
+			next_file = STAILQ_FIRST(files_h);
+			STAILQ_REMOVE_HEAD(files_h, files);
+			debug_print("took '%s' off IFQ\n", next_file->filepath);
+		} else if (!STAILQ_EMPTY(dirs_h)) {
+			next_file = STAILQ_FIRST(dirs_h);
+			STAILQ_REMOVE_HEAD(dirs_h, files);
+			debug_print("took '%s' off IDQ\n", next_file->filepath);
+		} else {
+			/* All input queues are empty, bail out */
+			next_file = NULL;
+			break;
+		}
 #ifdef DEBUG
 	if (next_file != NULL)
 		debug_print("handling '%s\n", next_file->filepath);
 	else
 		debug_print("%s\n", "no next_file to handle");
 #endif
+
+		/* if next_file is a directory unpack and free it */
+		if (is_dir(next_file->filepath)) {
+			unpack_dir(next_file->filepath, files_h);
+			free(next_file->filepath);
+			free(next_file);
+			next_file = NULL;
+		}
+
+	} while (!next_file);
+
 
 	return next_file;
 }
@@ -160,7 +171,6 @@ int find_duplicates (struct options *opt,
 			break;
 
 		/* handle the next file in queue and free it afterwards */
-		STAILQ_REMOVE_HEAD(files_head, files);
 		handle_file(opt, tmp->filepath);
 		free(tmp->filepath);
 		free(tmp);
@@ -227,8 +237,7 @@ struct options * options_init ()
 
 
 int parse_options (int argc, char **argv, struct options *opt,
-			struct stail_file_head *sfh,
-			struct stail_file_head *sdh)
+			struct stail_file_head *sfh)
 {
 	int retval = OPT_SUCCESS;
 	opterr = 0; /* don't print getopt errors */
@@ -266,15 +275,12 @@ int parse_options (int argc, char **argv, struct options *opt,
 	/* if exit flag was not raised handle input files */
 	if (retval == OPT_SUCCESS) {
 		for (; optind < argc; ++optind) {
-			/* divide input files to directories and others */
-			struct file *tmp = malloc(sizeof(struct file));
-			tmp->filepath = strdup(argv[optind]);
+			/* insert filepaths given as arguments to file input
+			 * queue */
+			struct file *infile = malloc(sizeof(struct file));
+			infile->filepath = strdup(argv[optind]);
 
-			if (is_dir(argv[optind])) {
-				STAILQ_INSERT_TAIL(sdh, tmp, files);
-			} else {
-				STAILQ_INSERT_TAIL(sfh, tmp, files);
-			}
+			STAILQ_INSERT_TAIL(sfh, infile, files);
 		}
 	}
 
@@ -292,8 +298,7 @@ void print_help ()
 
 
 int unpack_dir (const char *dirname,
-		struct stail_file_head *files_head,
-		struct stail_file_head *dirs_head)
+		struct stail_file_head *files_head)
 {
 	size_t dirname_len = strlen(dirname);
 	struct dirent *files;
@@ -315,12 +320,8 @@ int unpack_dir (const char *dirname,
 		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
 		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
 
-		/* insert to queue */
-		if (is_dir(iftmp->filepath)) {
-			STAILQ_INSERT_TAIL(dirs_head, iftmp, files);
-		} else {
-			STAILQ_INSERT_TAIL(files_head, iftmp, files);
-		}
+		/* insert to file input queue */
+		STAILQ_INSERT_TAIL(files_head, iftmp, files);
 	}
 
 	closedir(dir);

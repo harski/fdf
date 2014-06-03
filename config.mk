@@ -7,6 +7,6 @@ VERSION = 0.01
 PREFIX = /usr/local
 
 CC = cc
-CFLAGS = -std=c99 -g -Wall -Werror -pedantic -D_XOPEN_SOURCE=500 -DVERSION=\"$(VERSION)\"
+CFLAGS = -std=c99 -g -Wall -Werror -Wextra -pedantic -D_XOPEN_SOURCE=500 -DVERSION=\"$(VERSION)\"
 LDFLAGS = -lcrypto
 

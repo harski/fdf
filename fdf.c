@@ -163,17 +163,27 @@ int find_duplicates (struct options *opt,
 			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head)
 {
-	struct file *tmp;
-	while (1) {
-		/* if files and dirs are finished return */
-		tmp = get_next_file(files_head, dirs_head);
-		if (tmp == NULL)
-			break;
+	struct file *nfile;
+	mode_t type;
+
+	/* while there are files to go through... */
+	while ((nfile = get_next_file(files_head, dirs_head)) != NULL) {
+
+		get_filetype(nfile->filepath, &type);
+
+		if (S_ISREG(type)) {
+			handle_file(opt, nfile->filepath);
+		} else {
+			/* unfamiliar file type: ignore the file and print out
+			 * an error */
+			fprintf(stderr,
+				"'%s' is not a regular file, skipping...\n",
+				nfile->filepath);
+		}
 
 		/* handle the next file in queue and free it afterwards */
-		handle_file(opt, tmp->filepath);
-		free(tmp->filepath);
-		free(tmp);
+		free(nfile->filepath);
+		free(nfile);
 	}
 
 	return 1;

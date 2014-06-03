@@ -115,7 +115,7 @@ bool get_filetype (const char *filepath, mode_t * restrict type)
 	bool res = true;
 	struct stat sb;
 
-	if (stat(filepath, &sb) == -1)
+	if (lstat(filepath, &sb) == -1)
 		res = false;
 	else
 		*type = sb.st_mode;

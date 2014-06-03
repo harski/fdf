@@ -48,6 +48,8 @@ enum ACTIONS {
 struct options {
 	struct ft *ft;
 	int actions[AC_CNT]; /* all the available actions */
+
+	bool handle_symlinks;
 };
 
 struct file * get_next_file (struct stail_file_head *files,
@@ -173,11 +175,20 @@ int find_duplicates (struct options *opt,
 
 		if (S_ISREG(type)) {
 			handle_file(opt, nfile->filepath);
+		} else if (S_ISLNK(type)) {
+			/* check from options if symlinks should be handled */
+			if (opt->handle_symlinks) {
+				handle_file(opt, nfile->filepath);
+			} else {
+				fprintf(stderr,
+					"'%s' is a symlink: ignoring.\n",
+					nfile->filepath);
+			}
 		} else {
 			/* unfamiliar file type: ignore the file and print out
 			 * an error */
 			fprintf(stderr,
-				"'%s' is not a regular file, skipping...\n",
+				"'%s' is not a regular file: ignoring.\n",
 				nfile->filepath);
 		}
 
@@ -235,6 +246,8 @@ struct options * options_init ()
 	for (int i = 0; i < AC_CNT; ++i)
 		opt->actions[i] = 0;
 
+	opt->handle_symlinks = false;
+
 	return opt;
 }
 
@@ -249,11 +262,12 @@ int parse_options (int argc, char **argv, struct options *opt,
 		int optc;
 		static struct option long_options[] = {
 			{"help",	no_argument,	0,	'h'},
+			{"include-symlinks",	no_argument,	0,	's'},
 			{"version",	no_argument,	0,	'V'},
 			{0,		0,		0,	0}
 		};
 
-		optc = getopt_long(argc, argv, "hV",
+		optc = getopt_long(argc, argv, "hVs",
 				long_options, NULL);
 
 		/* all options handled */
@@ -263,6 +277,9 @@ int parse_options (int argc, char **argv, struct options *opt,
 		switch (optc) {
 		case 'h':
 			opt->actions[AC_HELP] = 1;
+			break;
+		case 's':
+			opt->handle_symlinks = true;
 			break;
 		case 'V':
 			opt->actions[AC_VERSION] = 1;
@@ -296,6 +313,8 @@ void print_help ()
 	printf("help: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
 	printf("-h, --help\tPrint this help.\n");
+	printf("-s, --include-symlinks\tInclude symlinks. "
+		"Default is to ignore.\n");
 	printf("-V, --version\tPrint version information.\n");
 }
 

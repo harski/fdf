@@ -25,6 +25,7 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 
 struct file {
 	char * filepath;
+	mode_t type;
 	STAILQ_ENTRY(file) files;
 };
 
@@ -49,6 +50,9 @@ struct ft {
 	struct ufile *root;
 };
 
+
+void file_destroy (struct file *f);
+struct file * file_init (const char *filepath);
 
 struct ft *ft_init ();
 void ft_destroy (struct ft *ft);

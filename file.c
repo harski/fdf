@@ -61,6 +61,35 @@ static struct ufile * file_add (struct ufile *root, struct ufile *file)
 }
 
 
+void file_destroy (struct file *f)
+{
+	free(f->filepath);
+	free(f);
+}
+
+
+struct file * file_init (const char *filepath)
+{
+	struct file *f = malloc(sizeof(struct file));
+	f->filepath = strdup(filepath);
+	get_filetype(filepath, &(f->type));
+
+#ifdef DEBUG
+	if (S_ISLNK(f->type))
+		fprintf(stderr, "%s is link\n", f->filepath);
+	else if (S_ISREG(f->type))
+		fprintf(stderr, "%s is regular file\n", f->filepath);
+	else
+		fprintf(stderr, "%s is surreal\n", f->filepath);
+#endif
+
+	if (get_filetype(filepath, &(f->type)))
+		return f;
+	else
+		return NULL;
+}
+
+
 struct ufile * ft_add_file (struct ft *ft, struct ufile *f)
 {
 	struct ufile *tmp;

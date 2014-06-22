@@ -54,11 +54,10 @@ struct options {
 
 struct file * get_next_file (struct stail_file_head *files,
 				struct stail_file_head *dirs);
-int find_duplicates (struct options *opt,
+int find_duplicates (const struct options *opt,
 			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head);
 int handle_file (const struct options *opt, const char *fpath);
-bool is_dir (const char *filepath);
 void options_destroy (struct options *opt);
 struct options * options_init ();
 int parse_options (int argc,
@@ -147,10 +146,9 @@ struct file * get_next_file (struct stail_file_head *files_h,
 #endif
 
 		/* if next_file is a directory unpack and free it */
-		if (is_dir(next_file->filepath)) {
+		if (S_ISDIR(next_file->type)) {
 			unpack_dir(next_file->filepath, files_h);
-			free(next_file->filepath);
-			free(next_file);
+			file_destroy(next_file);
 			next_file = NULL;
 		}
 
@@ -161,21 +159,19 @@ struct file * get_next_file (struct stail_file_head *files_h,
 }
 
 
-int find_duplicates (struct options *opt,
+int find_duplicates (const struct options *opt,
 			struct stail_file_head *files_head,
 			struct stail_file_head *dirs_head)
 {
 	struct file *nfile;
-	mode_t type;
 
 	/* while there are files to go through... */
 	while ((nfile = get_next_file(files_head, dirs_head)) != NULL) {
 
-		get_filetype(nfile->filepath, &type);
-
-		if (S_ISREG(type)) {
+		if (S_ISREG(nfile->type)) {
+			/* regular file, handle it normally */
 			handle_file(opt, nfile->filepath);
-		} else if (S_ISLNK(type)) {
+		} else if (S_ISLNK(nfile->type)) {
 			/* check from options if symlinks should be handled */
 			if (opt->handle_symlinks) {
 				handle_file(opt, nfile->filepath);
@@ -192,7 +188,7 @@ int find_duplicates (struct options *opt,
 				nfile->filepath);
 		}
 
-		/* handle the next file in queue and free it afterwards */
+		/* the file is handled, free it */
 		free(nfile->filepath);
 		free(nfile);
 	}
@@ -216,16 +212,6 @@ int handle_file (const struct options *opt, const char *fpath)
 	}
 
 	return retval;
-}
-
-
-bool is_dir (const char *filepath)
-{
-	mode_t mode;
-	if (get_filetype(filepath, &mode) && S_ISDIR(mode))
-		return true;
-	else
-		return false;
 }
 
 
@@ -297,10 +283,14 @@ int parse_options (int argc, char **argv, struct options *opt,
 		for (; optind < argc; ++optind) {
 			/* insert filepaths given as arguments to file input
 			 * queue */
-			struct file *infile = malloc(sizeof(struct file));
-			infile->filepath = strdup(argv[optind]);
-
-			STAILQ_INSERT_TAIL(sfh, infile, files);
+			struct file *infile = file_init(argv[optind]);
+			if (infile != NULL) {
+				STAILQ_INSERT_TAIL(sfh, infile, files);
+			} else {
+				fprintf(stderr,
+					"Could not read file '%s', skipping\n",
+					argv[optind]);
+			}
 		}
 	}
 
@@ -332,18 +322,29 @@ int unpack_dir (const char *dirname,
 	}
 
 	while ((files = readdir(dir)) != NULL) {
-		struct file *iftmp;
+		struct file *file;
+		char *fname;
 
 		if (!strcmp(files->d_name, ".") || !strcmp(files->d_name, ".."))
 			continue;
 
-		/* create the file struct */
-		iftmp = malloc(sizeof(struct file));
-		iftmp->filepath = malloc(dirname_len + strlen(files->d_name) + 2);
-		sprintf(iftmp->filepath, "%s/%s", dirname, files->d_name);
+		/* get full filename */
+		fname = malloc(dirname_len + strlen(files->d_name) + 2);
+		sprintf(fname, "%s/%s", dirname, files->d_name);
 
-		/* insert to file input queue */
-		STAILQ_INSERT_TAIL(files_head, iftmp, files);
+		/* create the file struct */
+		file = file_init(fname);
+
+		if (file != NULL) {
+			/* insert to file input queue */
+			STAILQ_INSERT_TAIL(files_head, file, files);
+		} else {
+			fprintf(stderr,
+				"file '%s' could not be read: skipping\n",
+				fname);
+		}
+
+		free(fname);
 	}
 
 	closedir(dir);

@@ -1,7 +1,7 @@
-/* Copyright 2013 Tuomo Hartikainen <tuomo.hartikainen@harski.org>.  Licensed
- * under the 2-clause BSD license, see LICENSE for details.  All rights
- * reserved.
-
+/* Copyright 2013-2014 Tuomo Hartikainen <tuomo.hartikainen@harski.org>.
+ * Licensed under the 2-clause BSD license, see LICENSE for details.  All
+ * rights reserved.
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
@@ -28,8 +28,10 @@
 #ifndef H_DEBUG_H
 #define H_DEBUG_H
 
+#include <stdio.h>
+
 #ifndef DEBUG
-	#define DEBUG 0
+#define DEBUG 0
 #endif
 
 #define debug_print(fmt, ...) \

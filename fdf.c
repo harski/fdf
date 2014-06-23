@@ -48,10 +48,17 @@ struct options {
 	struct ft *ft;
 	int actions[AC_CNT]; /* all the available actions */
 
+	/* how deep to go in directory tree. argument files and dirs are on
+	 * level 0, and negative value means there is no limit */
+	int dir_tree_depth;
+
+	/* should symlinks be ignored or handled as if they were the file they
+	 * are linking to */
 	bool handle_symlinks;
 };
 
-struct file * get_next_file (struct stail_file_head *files,
+struct file * get_next_file (const struct options *opt,
+				struct stail_file_head *files,
 				struct stail_file_head *dirs);
 int find_duplicates (const struct options *opt,
 			struct stail_file_head *files_head,
@@ -63,8 +70,9 @@ int parse_options (int argc,
 			char **argv,
 			struct options *opt,
 			struct stail_file_head *sfh);
+static inline int parse_uint (const char *str, int *i);
 void print_help ();
-int unpack_dir (const char *dirname,
+int unpack_dir (const struct file *dir_f,
 		struct stail_file_head *files_head);
 int validate_action (int *actions);
 
@@ -117,7 +125,8 @@ int main (int argc, char **argv)
 /* returns the next file \DIR in the IFQ. If no files are present the next
  * directory in directory queue is expanded and the next file is looked for
  * again. If there is no next file NULL is returned */
-struct file * get_next_file (struct stail_file_head *files_h,
+struct file * get_next_file (const struct options *opt,
+				struct stail_file_head *files_h,
 				struct stail_file_head *dirs_h)
 {
 	struct file *next_file;
@@ -137,7 +146,11 @@ struct file * get_next_file (struct stail_file_head *files_h,
 
 		/* if next_file is a directory unpack and free it */
 		if (S_ISDIR(next_file->type)) {
-			unpack_dir(next_file->filepath, files_h);
+			if (opt->dir_tree_depth == -1
+				|| opt->dir_tree_depth > next_file->depth) {
+				unpack_dir(next_file, files_h);
+			}
+
 			file_destroy(next_file);
 			next_file = NULL;
 		}
@@ -156,7 +169,7 @@ int find_duplicates (const struct options *opt,
 	struct file *nfile;
 
 	/* while there are files to go through... */
-	while ((nfile = get_next_file(files_head, dirs_head)) != NULL) {
+	while ((nfile = get_next_file(opt, files_head, dirs_head)) != NULL) {
 
 		if (S_ISREG(nfile->type)) {
 			/* regular file, handle it normally */
@@ -223,6 +236,7 @@ struct options * options_init ()
 		opt->actions[i] = 0;
 
 	opt->handle_symlinks = false;
+	opt->dir_tree_depth = -1;
 
 	return opt;
 }
@@ -237,13 +251,14 @@ int parse_options (int argc, char **argv, struct options *opt,
 	while (1) {
 		int optc;
 		static struct option long_options[] = {
+			{"tree-depth",	required_argument,	0,	'd'},
 			{"help",	no_argument,	0,	'h'},
 			{"include-symlinks",	no_argument,	0,	's'},
 			{"version",	no_argument,	0,	'V'},
 			{0,		0,		0,	0}
 		};
 
-		optc = getopt_long(argc, argv, "hVs",
+		optc = getopt_long(argc, argv, "d:hVs",
 				long_options, NULL);
 
 		/* all options handled */
@@ -251,6 +266,15 @@ int parse_options (int argc, char **argv, struct options *opt,
 			break;
 
 		switch (optc) {
+		case 'd':
+			if (optind != -1 &&
+				!parse_uint(optarg, &(opt->dir_tree_depth))) {
+				fprintf(stderr,
+					"Error: invalid tree depth '%s'\n",
+					optarg);
+				retval = OPT_EXIT_FAILURE;
+			}
+			break;
 		case 'h':
 			opt->actions[AC_HELP] = 1;
 			break;
@@ -273,7 +297,7 @@ int parse_options (int argc, char **argv, struct options *opt,
 		for (; optind < argc; ++optind) {
 			/* insert filepaths given as arguments to file input
 			 * queue */
-			struct file *infile = file_init(argv[optind]);
+			struct file *infile = file_init_depth(argv[optind], 0);
 			if (infile != NULL) {
 				STAILQ_INSERT_TAIL(sfh, infile, files);
 			} else {
@@ -288,23 +312,42 @@ int parse_options (int argc, char **argv, struct options *opt,
 }
 
 
+static inline int parse_uint (const char *str, int *i)
+{
+	int retval = 0;
+	char *endptr;
+	long val = strtol(str, &endptr, 10);
+
+	/* if string is valid */
+	if (*str != '\0' && (*endptr) == '\0') {
+		*i = (int) val;
+		retval = 1;
+	}
+
+	return retval;
+}
+
+
 void print_help ()
 {
 	printf("help: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
-	printf("-h, --help\tPrint this help.\n");
-	printf("-s, --include-symlinks\tInclude symlinks. "
-		"Default is to ignore.\n");
-	printf("-V, --version\tPrint version information.\n");
+	printf("-h, --help\t\t\tPrint this help.\n");
+	printf("-d NUM, --tree-depth NUM\t"
+		"Search filetrees up to NUM depth.\n");
+	printf("-s, --include-symlinks\t\t"
+		"Handle symlinks as if they were the file they are linking to. "
+		"The default is to ignore symlinks.\n");
+	printf("-V, --version\t\t\tPrint version information.\n");
 }
 
 
-int unpack_dir (const char *dirname,
+int unpack_dir (const struct file *dir_f,
 		struct stail_file_head *files_head)
 {
-	size_t dirname_len = strlen(dirname);
+	size_t dirname_len = strlen(dir_f->filepath);
 	struct dirent *files;
-	DIR *dir = opendir(dirname);
+	DIR *dir = opendir(dir_f->filepath);
 
 	if (dir==NULL) {
 		perror(NULL);
@@ -312,6 +355,7 @@ int unpack_dir (const char *dirname,
 	}
 
 	while ((files = readdir(dir)) != NULL) {
+		int depth;
 		struct file *file;
 		char *fname;
 
@@ -320,10 +364,12 @@ int unpack_dir (const char *dirname,
 
 		/* get full filename */
 		fname = malloc(dirname_len + strlen(files->d_name) + 2);
-		sprintf(fname, "%s/%s", dirname, files->d_name);
+		sprintf(fname, "%s/%s", dir_f->filepath, files->d_name);
 
-		/* create the file struct */
-		file = file_init(fname);
+		depth = dir_f->depth == -1 ? -1 : dir_f->depth + 1;
+
+		/* create the file struct, with file depth one more than */
+		file = file_init_depth(fname, depth);
 
 		if (file != NULL) {
 			/* insert to file input queue */

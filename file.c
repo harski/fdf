@@ -70,14 +70,22 @@ void file_destroy (struct file *f)
 
 struct file * file_init (const char *filepath)
 {
+	return file_init_depth(filepath, -1);
+}
+
+
+struct file * file_init_depth (const char *filepath, int depth)
+{
 	struct file *f = malloc(sizeof(struct file));
 	f->filepath = strdup(filepath);
 	get_filetype(filepath, &(f->type));
+	f->depth = depth;
 
 	if (get_filetype(filepath, &(f->type)))
 		return f;
 	else
 		return NULL;
+
 }
 
 

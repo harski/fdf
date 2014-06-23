@@ -74,15 +74,6 @@ struct file * file_init (const char *filepath)
 	f->filepath = strdup(filepath);
 	get_filetype(filepath, &(f->type));
 
-#ifdef DEBUG
-	if (S_ISLNK(f->type))
-		fprintf(stderr, "%s is link\n", f->filepath);
-	else if (S_ISREG(f->type))
-		fprintf(stderr, "%s is regular file\n", f->filepath);
-	else
-		fprintf(stderr, "%s is surreal\n", f->filepath);
-#endif
-
 	if (get_filetype(filepath, &(f->type)))
 		return f;
 	else

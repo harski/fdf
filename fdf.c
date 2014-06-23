@@ -28,7 +28,6 @@ fdf. If not, see <http://www.gnu.org/licenses/>. */
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "debug.h"
 #include "file.h"
 
 enum {
@@ -101,7 +100,6 @@ int main (int argc, char **argv)
 		find_duplicates(opt, &files_head, &dirs_head);
 		break;
 	case AC_HELP:
-		debug_print("%s\n", "debug print");
 		print_help();
 		break;
 	case AC_VERSION:
@@ -128,22 +126,14 @@ struct file * get_next_file (struct stail_file_head *files_h,
 		if (!STAILQ_EMPTY(files_h)) {
 			next_file = STAILQ_FIRST(files_h);
 			STAILQ_REMOVE_HEAD(files_h, files);
-			debug_print("took '%s' off IFQ\n", next_file->filepath);
 		} else if (!STAILQ_EMPTY(dirs_h)) {
 			next_file = STAILQ_FIRST(dirs_h);
 			STAILQ_REMOVE_HEAD(dirs_h, files);
-			debug_print("took '%s' off IDQ\n", next_file->filepath);
 		} else {
 			/* All input queues are empty, bail out */
 			next_file = NULL;
 			break;
 		}
-#ifdef DEBUG
-	if (next_file != NULL)
-		debug_print("handling '%s\n", next_file->filepath);
-	else
-		debug_print("%s\n", "no next_file to handle");
-#endif
 
 		/* if next_file is a directory unpack and free it */
 		if (S_ISDIR(next_file->type)) {

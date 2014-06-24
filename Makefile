@@ -22,13 +22,16 @@ objs := ${src:.c=.o}
 
 target = fdf
 
-all: $(target)
+all: $(target) fdf.1
 
 $(target): $(objs)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(objs) -o $@
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $<
+
+fdf.1: fdf.1.mk
+	@sed s/VERSION/$(VERSION)/ < fdf.1.mk > $@
 
 install: $(target)
 	install -m 0755 $(target) $(prefix)/bin
@@ -37,4 +40,6 @@ uninstall:
 	rm $(prefix)/bin/$(target)
 
 clean:
-	rm -rf $(objs) $(target)
+	rm -rf $(objs) $(target) fdf.1
+
+.PHONY: all clean install uninstall

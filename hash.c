@@ -30,7 +30,13 @@ static int update_hash (FILE *file, EVP_MD_CTX *mdctx);
 
 int digest_cmp (const unsigned char *d1, const unsigned char *d2)
 {
-	return strncmp((const char *)d1, (const char *)d2, DIGEST_LEN);
+	for (int i=0; i<DIGEST_LEN; ++i) {
+		if (d1[i] < d2[i])
+			return -1;
+		else if (d1[i] > d2[i])
+			return 1;
+	}
+	return 0;
 }
 
 

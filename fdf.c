@@ -72,6 +72,7 @@ int parse_options (int argc,
 			struct stail_file_head *sfh);
 static inline int parse_uint (const char *str, int *i);
 void print_help ();
+static inline void remove_trailing_slash(char *str);
 int unpack_dir (const struct file *dir_f,
 		struct stail_file_head *files_head);
 int validate_action (int *actions);
@@ -295,9 +296,13 @@ int parse_options (int argc, char **argv, struct options *opt,
 	/* if exit flag was not raised handle input files */
 	if (retval == OPT_SUCCESS) {
 		for (; optind < argc; ++optind) {
+			struct file *infile;
+
+			remove_trailing_slash(argv[optind]);
+
 			/* insert filepaths given as arguments to file input
 			 * queue */
-			struct file *infile = file_init_depth(argv[optind], 0);
+			infile = file_init_depth(argv[optind], 0);
 			if (infile != NULL) {
 				STAILQ_INSERT_TAIL(sfh, infile, files);
 			} else {
@@ -309,6 +314,14 @@ int parse_options (int argc, char **argv, struct options *opt,
 	}
 
 	return retval;
+}
+
+
+void remove_trailing_slash(char *str)
+{
+	int len = strlen(str);
+	if (str[len-1] == '/')
+		str[len-1] = '\0';
 }
 
 

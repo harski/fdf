@@ -1,7 +1,7 @@
 # Customize below to suit your system
 
 # fdf version
-VERSION = 0.01
+VERSION = 0.1
 
 # Paths
 PREFIX = /usr/local

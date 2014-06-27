@@ -106,6 +106,11 @@ int main (int argc, char **argv)
 
 	switch(action) {
 	case AC_FDF:
+		if (STAILQ_EMPTY(&files_head) && STAILQ_EMPTY(&dirs_head)) {
+			fprintf(stderr, "Error: no input.\n\n");
+			print_help();
+			return 2;
+		}
 		find_duplicates(opt, &files_head, &dirs_head);
 		break;
 	case AC_HELP:
@@ -343,7 +348,7 @@ static inline int parse_uint (const char *str, int *i)
 
 void print_help ()
 {
-	printf("help: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
+	printf("usage: fdf (ACTION | [OPTION]... (FILE|DIR)....)\n");
 	printf("\nACTIONS:\n");
 	printf("-h, --help\t\t\tPrint this help.\n");
 	printf("-d NUM, --tree-depth NUM\t"
